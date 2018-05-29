@@ -38,3 +38,7 @@ nosetests.xml
 
 # Virtual environment
 venv
+
+# txt
+shell.txt
+.idea
