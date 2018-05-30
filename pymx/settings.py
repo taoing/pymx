@@ -18,6 +18,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 将apps目录加入django的搜索目录中, 应用的包搜索目录默认是sys.path,这是一个路径列表,将apps的目录插入到sys.path中即可
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
+# 添加xadmin搜索路径支持
+sys.path.insert(0, os.path.join(BASE_DIR, 'extra_apps'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
@@ -44,10 +46,17 @@ INSTALLED_APPS = [
     'courses',
     'organization',
     'operation',
+    'xadmin',
+    'crispy_forms',
 ]
 
 # 自定用户模型
 AUTH_USER_MODEL = 'users.User'
+
+# 自定用户认证后端
+AUTHENTICATION_BACKENS = (
+    'users.views.CustomBackend',
+    )
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -135,3 +144,7 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = '/media/'
 MEDIA_URL = '/media/'
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+    )
