@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'operation',
     'xadmin',
     'crispy_forms',
+    # 第三方验证码,
+    'captcha',
 ]
 
 # 自定用户模型
@@ -142,9 +144,14 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/media/'
-MEDIA_URL = '/media/'
-
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
     )
+
+# 邮箱
+EMAIL_HOST = 'smtp.sina.com'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = 'taomiantm@sina.com'
+EMAIL_HOST_PASSWORD = 'xxxxxx'
+EMAIL_USE_TLS = False
+EMAIL_FROM = 'taomiantm@sina.com'
