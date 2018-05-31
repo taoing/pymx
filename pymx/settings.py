@@ -56,7 +56,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'users.User'
 
 # 自定用户认证后端
-AUTHENTICATION_BACKENS = (
+AUTHENTICATION_BACKENDS = (
     'users.views.CustomBackend',
     )
 
@@ -152,6 +152,6 @@ STATICFILES_DIRS = (
 EMAIL_HOST = 'smtp.sina.com'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = 'taomiantm@sina.com'
-EMAIL_HOST_PASSWORD = 'xxxxxx'
+EMAIL_HOST_PASSWORD = 'tm105047'
 EMAIL_USE_TLS = False
 EMAIL_FROM = 'taomiantm@sina.com'
