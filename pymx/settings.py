@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     # 第三方验证码,
     'captcha',
+    #分页
+    'pure_pagination',
 ]
 
 # 自定用户模型
@@ -162,3 +164,11 @@ EMAIL_FROM = 'taomiantm@sina.com'
 # 简单理解:MEDIA_URL是浏览器通过url访问的url, MEDIA_ROOT是文件在服务器上的存放位置
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 分页设置
+PAGINATION_SETTINGS = {
+    'PAGE_RANGE_DISPLAYED': 10,
+    'MARGIN_PAGES_DISPLAYED': 2,
+
+    # 'SHOW_FIRST_PAGE_WHEN_INVALID': True,
+}
