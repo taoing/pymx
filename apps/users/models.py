@@ -5,6 +5,8 @@ from django.db import models
 from datetime import datetime
 
 from django.contrib.auth.models import AbstractUser
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from pymx.settings import SECRET_KEY
 
 class User(AbstractUser):
     gender_choices = (
@@ -12,13 +14,13 @@ class User(AbstractUser):
         ('F', '女'),
     )
 
-    nickname = models.CharField(max_length = 50, null = True, blank = True)
+    nickname = models.CharField(verbose_name = '昵称', max_length = 50, null = True, blank = True)
     birthday = models.DateField(verbose_name = '生日', null = True, blank = True)
     gender = models.CharField(verbose_name = '性别', max_length = 1, choices = gender_choices, default = 'F')
-    address  = models.CharField(max_length = 100, null = True, blank = True)
-    mobile = models.CharField('手机号', max_length = 11, null = True, blank = True)
+    address  = models.CharField(verbose_name = '地址', max_length = 100, null = True, blank = True)
+    email = models.EmailField('邮箱', max_length = 50)
     # upload_to选项来指定MEDIA_ROOT的一个子目录用于存放上传的文件, 数据库中存放的仅是这个文件的路径（相对于MEDIA_ROOT）
-    image = models.ImageField(upload_to = 'image/%Y/%M', default = 'image/default.png', max_length = 100)
+    image = models.ImageField(verbose_name='用户头像', upload_to = 'image/%Y/%m', default = 'image/default.png', max_length = 100)
 
     class Meta:
         verbose_name = '用户信息'
@@ -26,6 +28,14 @@ class User(AbstractUser):
 
     def str(self):
         return self.username
+
+    def generate_activate_token(self, expiration=3600*24):
+        s = Serializer(SECRET_KEY,expiration)
+        return s.dumps({'activate':self.email}).decode('utf-8')
+
+    def generate_reset_token(self, expiration=3600*24):
+        s = Serializer(SECRET_KEY,expiration)
+        return s.dumps({'reset':self.email}).decode('utf-8')
 
 class EmailVerifyCode(models.Model):
     type_choices = (

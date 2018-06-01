@@ -83,6 +83,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # 添加文件处理器, 在模板中使用{{ MEDIA_URL }}
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -152,6 +154,11 @@ STATICFILES_DIRS = (
 EMAIL_HOST = 'smtp.sina.com'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = 'taomiantm@sina.com'
-EMAIL_HOST_PASSWORD = 'tm105047'
+EMAIL_HOST_PASSWORD = 'xxxxxx'
 EMAIL_USE_TLS = False
 EMAIL_FROM = 'taomiantm@sina.com'
+
+# 服务器上传文件保存位置
+# 简单理解:MEDIA_URL是浏览器通过url访问的url, MEDIA_ROOT是文件在服务器上的存放位置
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

@@ -14,10 +14,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, re_path
 import xadmin
 from django.views.generic import TemplateView
+from django.views.static import serve
+
 from users import views
+import captcha
+from organization.views import OrgView
+from pymx.settings import MEDIA_ROOT
 
 urlpatterns = [
     path('admin/', xadmin.site.urls),
@@ -25,4 +30,14 @@ urlpatterns = [
     # path('login/', views.user_login, name='login'),
     path('login/', views.LoginView.as_view(), name='login'),
     path('logout/', views.user_logout, name='logout'),
+    path('captcha/', include('captcha.urls')),
+    path('register/', views.RegisterView.as_view(), name='register'),
+    path('activate/<str:token>/', views.ActivateView.as_view(), name='activate'),
+    path('forgetpwd/', views.ForgetPwdView.as_view(), name='forgetpwd'),
+    path('reset/<str:token>/', views.ResetView.as_view(), name='reset'),
+    path('resetpwd/', views.ResetPwdView.as_view(), name='resetpwd'),
+
+    path('org_list/', OrgView.as_view(), name='org_list'),
+    # 在模板中使用用户上传的文件,启用django.views.static.server
+    re_path('media/(?P<path>.*)', serve, {'document_root':MEDIA_ROOT}),
 ]
