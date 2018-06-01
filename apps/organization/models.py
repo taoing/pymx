@@ -12,6 +12,12 @@ class City(models.Model):
         return self.name
 
 class CourseOrg(models.Model):
+    category_choices = (
+        ('pxjg', '培训机构'),
+        ('gx', '高校'),
+        ('gr', '个人'),
+        )
+
     name = models.CharField('机构名称', max_length = 40)
     city = models.ForeignKey(City, on_delete = models.SET_NULL, null = True, blank = True, verbose_name = '所在城市')
     location = models.CharField('地址', max_length = 50)
@@ -22,6 +28,9 @@ class CourseOrg(models.Model):
     click_nums = models.IntegerField('点击数', default = 0)
     fav_nums = models.IntegerField('收藏数', default = 0)
     has_auth = models.BooleanField('是否已认证', default = False)
+    category = models.CharField('机构类别', max_length=10, choices=category_choices, default='pxjg')
+    students = models.IntegerField('学生数', default=0)
+    courses = models.IntegerField('课程数', default=0)
 
     class Meta:
         verbose_name = '课程机构'
