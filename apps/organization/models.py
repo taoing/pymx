@@ -19,7 +19,7 @@ class CourseOrg(models.Model):
         )
 
     name = models.CharField('机构名称', max_length = 40)
-    city = models.ForeignKey(City, on_delete = models.SET_NULL, null = True, blank = True, verbose_name = '所在城市')
+    city = models.ForeignKey(City, on_delete = models.CASCADE, null = True, blank = True, verbose_name = '所在城市')
     location = models.CharField('地址', max_length = 50)
     image = models.ImageField('logo', upload_to = 'org/%Y/%m', max_length = 100)
     desc = models.TextField('描述')
@@ -40,7 +40,7 @@ class CourseOrg(models.Model):
         return self.name
 
 class Teacher(models.Model):
-    org = models.ForeignKey(CourseOrg, on_delete = models.SET_NULL, null = True, blank = True, verbose_name = '所属机构')
+    org = models.ForeignKey(CourseOrg, on_delete = models.CASCADE, null = True, blank = True, verbose_name = '所属机构')
     name = models.CharField('姓名', max_length = 20)
     work_years = models.IntegerField('工作年限', default = 0)
     work_company = models.CharField('就职公司', max_length = 50)
@@ -49,6 +49,11 @@ class Teacher(models.Model):
     click_nums = models.IntegerField('点击数', default = 0)
     fav_nums = models.IntegerField('收藏数', default = 0)
     add_time = models.DateTimeField('添加时间', default = datetime.now)
+    image = models.ImageField('头像', upload_to = 'teacher/%Y/%m', max_length = 100, default='')
+
+    class Meta:
+        verbose_name = '教师'
+        verbose_name_plural = verbose_name
 
     def __str__(self):
         return self.name
