@@ -19,8 +19,9 @@
     <header>
 		<div  class=" header">
  			<div class="top">
+                <div class="fl"><p>服务电话：<b>66666666</b></p></div>
+                <!--登录后跳转-->
                 {% if request.user.is_authenticated %}
-                <div class="fl"><p>服务电话：<b>33333333</b></p></div>
                 <div class="personal">
                     <dl class="user fr">
                         <dd>{{ request.user.username }}<img class="down fr" src="/static/images/top_down.png"/></dd>
@@ -40,15 +41,9 @@
                         </div>
                     </div>
                 </div>
-                {% else %}
-				<div class="wp">
-					<div class="fl"><p>服务电话：<b>33333333</b></p></div>
-					<!--登录后跳转-->
-
-                        
+                {% else %}             
                         <a style="color:white" class="fr registerbtn" href="/register/">注册</a>
                         <a style="color:white" class="fr loginbtn" href="/login/">登录</a>
-				</div>
                 {% endif %}
 			</div>
 
@@ -79,7 +74,7 @@
 						<ul>
 							<li class="active" ><a href="index.html">首页</a></li>
 							<li >
-								<a href="course-list.html">
+								<a href="{% url 'course:course_list' %}">
 									公开课<img class="hot" src="/static/images/nav_hot.png">
 								</a>
 							</li>
@@ -548,7 +543,7 @@
 				<ul class="cont">
 					<li class="logo"><a href=""><img src="/static/images/footlogo.png"/></a></li>
 					<li class="code"><img src="/static/images/code.jpg"/><p class="center">扫描关注微信</p></li>
-					<li class="third"><img class="fl" src="/static/images/tell.png"/><p class="tell">33333333</p><p class="time">周一至周日 9:00-18:00</p></li>
+					<li class="third"><img class="fl" src="/static/images/tell.png"/><p class="tell">66666666</p><p class="time">周一至周日 9:00-18:00</p></li>
 				</ul>
 
 			</div>

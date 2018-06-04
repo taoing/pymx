@@ -36,8 +36,12 @@ urlpatterns = [
     path('reset/<str:token>/', views.ResetView.as_view(), name='reset'),
     path('resetpwd/', views.ResetPwdView.as_view(), name='resetpwd'),
 
-    # 在模板中使用用户上传的文件,启用django.views.static.server
+    # 配置上传文件访问处理函数,启用django.views.static.server
     re_path('media/(?P<path>.*)', serve, {'document_root':MEDIA_ROOT}),
+
+    #课程机构
     # path('org_list/', OrgView.as_view(), name='org_list'),
     path('org/', include('organization.urls', namespace='org')),
+    #课程相关
+    path('course/', include('courses.urls', namespace='course')),
 ]
