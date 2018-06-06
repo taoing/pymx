@@ -25,7 +25,7 @@ class UserMessageAdmin(object):
     list_filter = ('user','message','has_read','add_time')
 
 class UserCourseAdmin(object):
-    list_dsiplay = ('user','course','add_time')
+    list_dsiplay = ('user','course','add_time',)
     search_fields = ('user','course')
     list_filter = ('user','course','add_time')
 

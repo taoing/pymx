@@ -3,14 +3,24 @@ from django.shortcuts import render
 # Create your views here.
 from django.http import HttpResponse
 from django.views.generic.base import View
-from .models import Course, CourseResource
+from django.db.models import Q # 适用Q对象完成并查询
+
+from .models import Course, CourseResource, Video
 from pure_pagination import Paginator, PageNotAnInteger, EmptyPage
-from operation.models import UserFavorite, CourseComment
+from operation.models import UserFavorite, CourseComment, UserCourse
+from utils.mixin_utils import LoginRequiredMixin
 
 class CourseListView(View):
     def get(self, request):
         all_courses = Course.objects.all().order_by('-add_time')
         hot_courses = Course.objects.all().order_by('-click_nums')[:3]
+
+        # 课程搜索
+        # 获取搜索关键词
+        search_keywords = request.GET.get('keywords', '')
+        if search_keywords:
+            # 用关键词在数据库中查找
+            all_courses = all_courses.filter(Q(name__icontains=search_keywords)|Q(detail__icontains=search_keywords))
 
         sort = request.GET.get('sort', '')
         if sort:
@@ -73,28 +83,71 @@ class CourseDetailView(View):
         return render(request, 'course-detail.html', context)
 
 
-class CourseInfoView(View):
+class CourseInfoView(LoginRequiredMixin, View):
     '''
     课程章节信息
     '''
     def get(self, request, course_id):
         course = Course.objects.get(id=course_id)
+
+        #查询用户是否学习了该课程
+        user_course = UserCourse.objects.filter(user=request.user, course=course)
+        if not user_course:
+            # 如果用户没有学习这门课程就将用户与课程关联起来, 创建usercourse记录
+            user_course = UserCourse(user=request.user, course=course)
+            user_course.save()
+
         all_resources = CourseResource.objects.filter(course=course)
+
+        # 学过该课程的用户, 还学过的其他课程
+        # 该课程的所有usercourse记录
+        user_courses = UserCourse.objects.filter(course=course)
+        # 学过该课程的所有用户id
+        user_ids = [user_course.user_id for user_course in user_courses]
+        # 通过所有用户id找到他们学习过的课程
+        all_user_courses = UserCourse.objects.filter(user_id__in=user_ids)
+        # 所有课程id
+        course_ids = [user_course.course_id for user_course in all_user_courses]
+        # 按课程点击量取前五, 现在数据较少,取一个
+        relate_courses = Course.objects.filter(id__in=course_ids).order_by('-click_nums')[:2]
 
         context = {}
         context['course'] = course
         context['all_resources'] = all_resources
+        context['relate_courses'] = relate_courses
         return render(request, 'course-video.html', context)
 
-class CourseCommentView(View):
+class CourseCommentView(LoginRequiredMixin, View):
     def get(self, request, course_id):
         course = Course.objects.get(id=course_id)
+
+        #查询用户是否学习了该课程
+        user_course = UserCourse.objects.filter(user=request.user, course=course)
+        if not user_course:
+            # 如果用户没有学习这门课程就将用户与课程关联起来, 创建usercourse记录
+            user_course = UserCourse(user=request.user, course=course)
+            user_course.save()
+
         all_resources = CourseResource.objects.filter(course=course)
         all_comments = course.coursecomment_set.all()
+
+        # 学过该课程的用户, 还学过的其他课程
+        # 该课程的所有usercourse记录
+        user_courses = UserCourse.objects.filter(course=course)
+        # 学过该课程的所有用户id
+        user_ids = [user_course.user_id for user_course in user_courses]
+        # 通过所有用户id找到他们学习过的课程
+        all_user_courses = UserCourse.objects.filter(user_id__in=user_ids)
+        # 所有课程id
+        course_ids = [user_course.course_id for user_course in all_user_courses]
+        # 按课程点击量取前五, 现在数据较少,取一个
+        relate_courses = Course.objects.filter(id__in=course_ids).order_by('-click_nums')[:2]
+
         context = {}
         context['course'] = course
         context['all_resources'] = all_resources
         context['all_comments'] = all_comments
+        context['relate_courses'] = relate_courses
         return render(request, 'course-comment.html', context)
 
 
@@ -118,3 +171,30 @@ class AddCommentView(View):
             return HttpResponse('{"status":"success","msg":"评论成功"}', content_type='application/json')
         else:
             return HttpResponse('{"status":"fail","msg":"评论出错"}', content_type='application/json')
+
+"""
+不适用本地视频播放界面, 直接在课程章节界面跳转到慕课网站
+class VideoPlayView(View):
+    '''
+    视频播放
+    '''
+    def get(self, request, video_id):
+        video = Video.objects.get(id=video_id)
+        course = video.lesson.course
+
+        all_resources = CourseResource.objects.filter(course=course)
+
+        # 学过该课程的用户, 还学过的其他课程
+        user_courses = UserCourse.objects.filter(course=course)
+        user_ids = [user_course.user_id for user_course in user_courses]
+        all_user_courses = UserCourse.objects.filter(user_id__in=user_ids)
+        course_ids = [user_course.course_id for user_course in all_user_courses]
+        relate_courses = Course.objects.filter(id__in=course_ids).order_by('-click_nums')[:2]
+
+        context = {}
+        context['video'] = video
+        context['course'] = course
+        context['all_resources'] = all_resources
+        context['relate_courses'] = relate_courses
+        return render(request, 'course-play.html', context)
+"""

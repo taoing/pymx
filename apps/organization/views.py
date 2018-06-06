@@ -3,7 +3,9 @@ from django.shortcuts import render, get_object_or_404
 # Create your views here.
 from django.http import HttpResponse
 from django.views.generic.base import View
-from .models import CourseOrg, City
+from django.db.models import Q
+
+from .models import CourseOrg, City, Teacher
 # from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 # 用django-pure-pagination实现分页
 from pure_pagination import Paginator, PageNotAnInteger, EmptyPage
@@ -42,6 +44,11 @@ class OrgView(View):
         # 全部城市
         all_citys = City.objects.all()
 
+        # 课程机构搜索
+        search_keywords = request.GET.get('keywords', '')
+        if search_keywords:
+            all_orgs = all_orgs.filter(Q(name__icontains=search_keywords)|Q(desc__icontains=search_keywords))
+
         # 获取用户选择的城市
         city_id = request.GET.get('city', '')
         # 如果选择了城市, 对城市的课程机构筛选
@@ -70,9 +77,7 @@ class OrgView(View):
         # 对机构进行分页
         paginator = Paginator(all_orgs, 5, request=request)
         # 获取get请求url的查询参数, url中?之后就是查询参数
-        page = request.GET.get('page')
-        if page == None:
-            page = 1
+        page = request.GET.get('page', 1)
         try:
             page = paginator.page(page)
         # page不是整数
@@ -199,3 +204,72 @@ class AddFavoriteView(View):
                 return HttpResponse('{"status":"success", "msg":"已收藏"}', content_type='appliction/json')
             else:
                 return HttpResponse('{"status":"fail", "msg":"收藏出错"}', content_type='appliction/json')
+
+
+class TeacherListView(View):
+    '''
+    授课教师列表
+    '''
+    def get(self, request):
+        all_teachers = Teacher.objects.all()
+        sorted_teachers = all_teachers.order_by('-click_nums')[:3]
+
+        # 讲师搜索
+        search_keywords = request.GET.get('keywords', '')
+        if search_keywords:
+            all_teachers = all_teachers.filter(Q(name__icontains=search_keywords)|
+                                                Q(work_company__icontains=search_keywords)|
+                                                Q(work_position__icontains=search_keywords)
+                                                )
+
+        sort = request.GET.get('sort', '')
+        if sort == 'hot':
+            all_teachers = all_teachers.order_by('-click_nums')
+        else:
+            sort = ''
+
+        # 对教师分页
+        paginator = Paginator(all_teachers, 3, request=request)
+        # 获取get请求url的查询参数, url中?之后就是查询参数
+        page = request.GET.get('page', 1)
+        try:
+            page = paginator.page(page)
+        # page不是整数
+        except PageNotAnInteger:
+            page = paginator.page(1)
+        # page超出了页码范围,获取最后一页
+        except EmptyPage:
+            page = paginator.page(paginator.num_pages)
+
+        context = {}
+        context['all_teachers'] = page
+        context['sort'] = sort
+        context['sorted_teachers'] = sorted_teachers
+        return render(request, 'teachers-list.html', context)
+
+
+class TeacherDetailView(View):
+    '''
+    教师详情
+    '''
+    def get(self, request, teacher_id):
+        teacher = get_object_or_404(Teacher, id=teacher_id)
+        teacher_courses = teacher.course_set.all()
+
+        sorted_teachers = Teacher.objects.all().order_by('-click_nums')[:3]
+
+        has_fav_teacher = False
+        has_fav_org = False
+        if request.user.is_authenticated:
+            if UserFavorite.objects.filter(user=request.user, fav_id=teacher.id, fav_type=3):
+                has_fav_teacher = True
+            if UserFavorite.objects.filter(user=request.user, fav_id=teacher.org.id, fav_type=2):
+                has_fav_org = True
+
+        return render(request, 'teacher-detail.html', {
+            'teacher':teacher,
+            'teacher_courses':teacher_courses,
+            'sorted_teachers':sorted_teachers,
+            'has_fav_teacher':has_fav_teacher,
+            'has_fav_org':has_fav_org,
+            })
