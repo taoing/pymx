@@ -4,7 +4,7 @@ from django.db import models
 
 from datetime import datetime
 
-from organization.models import CourseOrg
+from organization.models import CourseOrg, Teacher
 
 class Course(models.Model):
     name = models.CharField(max_length = 50, verbose_name = '课程名称')
@@ -14,14 +14,29 @@ class Course(models.Model):
     learn_time = models.IntegerField(default = 0, verbose_name = '课程时长(分钟数)')
     students = models.IntegerField(default = 0, verbose_name = '学习人数')
     fav_nums = models.IntegerField(default = 0, verbose_name = '收藏人数')
-    image = models.ImageField(upload_to = 'courese/%Y/%m', max_length = 100, verbose_name = '封面图')
+    image = models.ImageField(upload_to = 'courese/%Y/%m', max_length = 100, verbose_name = '封面图', null=True, blank=True)
     click_nums = models.IntegerField(default = 0, verbose_name = '点击数')
     add_time = models.DateTimeField(default = datetime.now, verbose_name = '添加时间')
     course_org = models.ForeignKey(CourseOrg, on_delete=models.CASCADE, null=True, blank=True, verbose_name='所属机构')
+    category = models.CharField(default='', max_length = 20, verbose_name = '课程类别')
+    tag = models.CharField(default='', max_length = 10, verbose_name = '课程标签')
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, null=True, blank=True, verbose_name='讲师')
+    youneed_know = models.CharField('课程须知', max_length=300, null=True, blank=True)
+    teacher_tell = models.CharField('讲师告知', max_length=300, null=True, blank=True)
 
     class Meta:
         verbose_name = '课程'
         verbose_name_plural = verbose_name
+
+    def get_learn_users(self):
+        return self.usercourse_set.all()[:5]
+
+    def get_lesson_nums(self):
+        return self.lesson_set.all().count()
+
+    def get_course_lesson(self):
+        # 获取课程章节
+        return self.lesson_set.all()
 
     def __str__(self):
         return self.name
@@ -35,12 +50,18 @@ class Lesson(models.Model):
         verbose_name = '章节'
         verbose_name_plural = verbose_name
 
+    def get_lesson_video(self):
+        # 获取章节视频
+        return self.video_set.all()
+
     def __str__(self):
         return self.name
 
 class Video(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete = models.CASCADE, null = True, blank = True, verbose_name = '章节')
     name = models.CharField('视频名', max_length = 100)
+    url = models.CharField('视频地址', max_length=200, null=True, blank=True)
+    learn_time = models.IntegerField('学习时长(分钟数)', default=0)
     add_time = models.DateTimeField('添加时间', default = datetime.now)
 
     class Meta:
