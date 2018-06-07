@@ -42,6 +42,10 @@ urlpatterns = [
     #课程机构
     # path('org_list/', OrgView.as_view(), name='org_list'),
     path('org/', include('organization.urls', namespace='org')),
+
     #课程相关
     path('course/', include('courses.urls', namespace='course')),
+
+    # 用户个人中心相关
+    path('users/', include('users.urls', namespace='users')),
 ]

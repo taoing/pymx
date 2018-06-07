@@ -1,18 +1,29 @@
 from django.shortcuts import render
 
 # Create your views here.
+
+import json
+from datetime import datetime, timedelta
+
+from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.backends import ModelBackend #默认用户认证后端
 from django.db.models import Q
 from django.views.generic.base import View #基于类的视图
 from django.contrib.auth.hashers import make_password
 
+from pure_pagination import Paginator, PageNotAnInteger, EmptyPage
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 from pymx.settings import SECRET_KEY
-from .models import User
-from .forms import LoginForm, RegisterForm, ForgetPwdForm, ResetPwdForm
-from utils.custom_send_mail import send_register_email, send_reset_email
+from .models import User, EmailVerifyCode
+from .forms import LoginForm, RegisterForm, ForgetPwdForm, ResetPwdForm, UploadImageForm, UserInfoForm
+from operation.models import UserCourse, UserFavorite, UserMessage
+from organization.models import CourseOrg, Teacher
+from courses.models import Course
+
+from utils.custom_send_mail import send_register_email, send_reset_email, send_code_email
+from utils.mixin_utils import LoginRequiredMixin
 
 # 自定义认证后端, 实现用户名和邮箱都可以登录,主要自定义实现authenticate和get_user方法, 这里只实现authenticate方法
 class CustomBackend(ModelBackend):
@@ -83,6 +94,13 @@ class RegisterView(View):
             user.password = make_password(password)
             user.is_active = False
             user.save()
+
+            # 向用户发送消息
+            message = UserMessage()
+            message.user = user.id
+            message.message = '欢迎注册'
+            message.save()
+
             token = user.generate_activate_token()
             # 发送邮件耗时操作
             send_register_email(user.email, token)
@@ -103,6 +121,11 @@ class ActivateView(View):
         if user:
             user.is_active = True
             user.save()
+            # 向用户发送消息
+            message = UserMessage()
+            message.user = user.id
+            message.message = '账户已激活'
+            message.save()
         else:
             return render(request, 'activate_fail.html')
         return render(request, 'login.html')
@@ -151,6 +174,13 @@ class ResetPwdView(View):
             user = User.objects.filter(email=email)[0]
             user.password = make_password(password1)
             user.save()
+
+            # 向用户发送消息
+            message = UserMessage()
+            message.user = user.id
+            message.message = '密码已重置'
+            message.save()
+
             return render(request, 'login.html')
         else:
             return render(request, 'password_reset.html', {'emial':email, 'resetpwd_form':resetpwd_form})
@@ -159,3 +189,152 @@ class ResetPwdView(View):
 def user_logout(request):
     logout(request)
     return render(request, 'index.html')
+
+
+class UserInfoView(LoginRequiredMixin, View):
+    '''
+    用户个人信息
+    '''
+    def get(self, request):
+        return render(request, 'usercenter-info.html', {})
+
+    # 修改个人信息
+    def post(self, request):
+        user_info_form = UserInfoForm(request.POST, instance=request.user)
+        if user_info_form.is_valid():
+            user_info_form.save()
+            return HttpResponse('{"status":"success"}', content_type='application/json')
+        else:
+            return HttpResponse(json.dumps(user_info_form.errors), content_type='application/json')
+
+class UploadImageView(LoginRequiredMixin, View):
+    '''
+    用户图像修改
+    '''
+    def post(self, request):
+        image_form = UploadImageForm(request.POST, request.FILES, instance=request.user)
+        if image_form.is_valid():
+            image_form.save()
+            return HttpResponse('{"status":"success"}', content_type='application/json')
+        else:
+            return HttpResponse('{"status":"fail"}', content_type='application/json')
+
+class UpdatePwdView(LoginRequiredMixin, View):
+    '''
+    用户个人中心修改密码
+    '''
+    def post(self, request):
+        resetpwd_form = ResetPwdForm(request.POST)
+        if resetpwd_form.is_valid():
+            password1 = resetpwd_form.cleaned_data.get('password1')
+            password2 = resetpwd_form.cleaned_data.get('password2')
+            if password1 != password2:
+                return HttpResponse('{"status":"fail", "msg":"密码不一致"}', content_type='application/json')
+            request.user.password = make_password(password1)
+            request.user.save()
+            return HttpResponse('{"status":"success"}', content_type='application/json')
+        else:
+            return HttpResponse(json.dumps(resetpwd_form.errors), content_type='application/json')
+
+
+class SendEmailCodeView(LoginRequiredMixin, View):
+    '''
+    发送邮箱修改验证码
+    '''
+    def get(self, request):
+        email = request.GET.get('email')
+        if User.objects.filter(email=email):
+            return HttpResponse('{"email":"邮箱已存在"}', content_type='application/json')
+        send_code_email(email)
+        return HttpResponse('{"status":"success"}', content_type='application/json')
+
+
+class UpdateEmailView(LoginRequiredMixin, View):
+    '''
+    修改邮箱
+    '''
+    def post(self, request):
+        email = request.POST.get('email')
+        code = request.POST.get('code')
+        existed_code = EmailVerifyCode.objects.filter(email=email, verify_code=code)
+
+        # 验证码有效时间20分钟
+        if existed_code and (datetime.now() < existed_code[0].send_time + timedelta(seconds=20*60)):
+            user = request.user
+            user.email = email
+            user.save()
+            return HttpResponse('{"status":"success"}', content_type='application/json')
+
+        else:
+            return HttpResponse('{"email":"验证码无效"}', content_type='application/json')
+
+
+class MyCourseView(LoginRequiredMixin, View):
+    '''我的课程'''
+    def get(self, request):
+        user_courses = UserCourse.objects.filter(user=request.user)
+        return render(request, 'usercenter-mycourse.html', {
+            'user_courses':user_courses,
+            })
+
+
+class MyFavOrgView(LoginRequiredMixin, View):
+    ''''用户收藏的课程机构'''
+    def get(self, request):
+        org_list = []
+        fav_orgs = UserFavorite.objects.filter(user=request.user, fav_type=2)
+        for fav_org in fav_orgs:
+            org_id = fav_org.fav_id
+            org = CourseOrg.objects.get(id=org_id)
+            org_list.append(org)
+        return render(request, 'usercenter-fav-org.html', {
+            'org_list':org_list,
+            })
+
+
+class MyFavTeacherView(LoginRequiredMixin, View):
+    ''''用户收藏的授课教师'''
+    def get(self, request):
+        teacher_list = []
+        fav_teachers = UserFavorite.objects.filter(user=request.user, fav_type=3)
+        for fav_teacher in fav_teachers:
+            teacher_id = fav_teacher.fav_id
+            teacher = Teacher.objects.get(id=teacher_id)
+            teacher_list.append(teacher)
+        return render(request, 'usercenter-fav-teacher.html', {
+            'teacher_list':teacher_list,
+            })
+
+
+class MyFavCourseView(LoginRequiredMixin, View):
+    ''''用户收藏的公开课程'''
+    def get(self, request):
+        course_list = []
+        fav_courses = UserFavorite.objects.filter(user=request.user, fav_type=1)
+        for fav_course in fav_courses:
+            course_id = fav_course.fav_id
+            course = Course.objects.get(id=course_id)
+            course_list.append(course)
+        return render(request, 'usercenter-fav-course.html', {
+            'course_list':course_list,
+            })
+
+
+class MyMessageView(LoginRequiredMixin, View):
+    '''用户消息'''
+    def get(self, request):
+        all_messages = UserMessage.objects.filter(user=request.user.id)
+
+        # 分页
+        paginator = Paginator(all_messages, 2, request=request)
+        page = request.GET.get('page', 1)
+        try:
+            page = paginator.page(page)
+        except PageNotAnInteger:
+            page = paginator.page(1)
+        except EmptyPage:
+            page = paginator.page(paginator.num_pages)
+
+        return render(request, 'usercenter-message.html', {
+            'all_messages':page,
+            })

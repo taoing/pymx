@@ -37,15 +37,21 @@ class User(AbstractUser):
         s = Serializer(SECRET_KEY,expiration)
         return s.dumps({'reset':self.email}).decode('utf-8')
 
+    def get_unread_nums(self):
+        '''获取用户未读消息数量'''
+        from operation.models import UserMessage
+        return UserMessage.objects.filter(user=self.id, has_read=False).count()
+
 class EmailVerifyCode(models.Model):
     type_choices = (
         ('register', '注册'),
         ('forget', '找回密码'),
+        ('update_email','修改邮箱'),
         )
 
     email = models.EmailField(max_length = 50)
     verify_code = models.CharField('验证码', max_length = 20)
-    send_type = models.CharField('验证码类型', choices = type_choices, max_length = 10)
+    send_type = models.CharField('验证码类型', choices = type_choices, max_length = 20)
     send_time = models.DateTimeField('发送时间', default = datetime.now)
 
     class Meta:

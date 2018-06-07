@@ -3,6 +3,8 @@
 from django import forms
 from captcha.fields import CaptchaField
 
+from .models import User
+
 #登录表单
 class LoginForm(forms.Form):
     username = forms.CharField(required=True, max_length=20)
@@ -20,3 +22,13 @@ class ForgetPwdForm(forms.Form):
 class ResetPwdForm(forms.Form):
     password1 = forms.CharField(required=True, min_length=6, max_length=20)
     password2 = forms.CharField(required=True, min_length=6, max_length=20)
+
+class UploadImageForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('image',)
+
+class UserInfoForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('nickname', 'birthday', 'gender', 'address',)
