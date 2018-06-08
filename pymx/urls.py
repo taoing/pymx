@@ -16,19 +16,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 import xadmin
-from django.views.generic import TemplateView
 from django.views.static import serve
 
 from users import views
 from organization.views import OrgView
-from pymx.settings import MEDIA_ROOT
+from pymx.settings import MEDIA_ROOT #, STATIC_ROOT
 
 urlpatterns = [
     path('admin/', xadmin.site.urls),
-    path('', TemplateView.as_view(template_name='index.html'), name='index'),
+    path('', views.IndexView.as_view(), name='index'),
     # path('login/', views.user_login, name='login'),
     path('login/', views.LoginView.as_view(), name='login'),
-    path('logout/', views.user_logout, name='logout'),
+    path('logout/', views.LogoutView.as_view(), name='logout'),
     path('captcha/', include('captcha.urls')),
     path('register/', views.RegisterView.as_view(), name='register'),
     path('activate/<str:token>/', views.ActivateView.as_view(), name='activate'),
@@ -37,7 +36,7 @@ urlpatterns = [
     path('resetpwd/', views.ResetPwdView.as_view(), name='resetpwd'),
 
     # 配置上传文件访问处理函数,启用django.views.static.server
-    re_path('media/(?P<path>.*)', serve, {'document_root':MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root':MEDIA_ROOT}),
 
     #课程机构
     # path('org_list/', OrgView.as_view(), name='org_list'),
@@ -48,4 +47,13 @@ urlpatterns = [
 
     # 用户个人中心相关
     path('users/', include('users.urls', namespace='users')),
+
+    # DEBUG = False时, 静态文件访问处理
+    # re_path(r'^static/(?P<path>.*)$', serve, {'document_root':STATIC_ROOT}),
 ]
+
+#全局404错误页面配置
+handler404 = 'users.views.custom_page_not_found'
+
+#全局500错误页面配置
+handler500 = 'users.views.server_error'

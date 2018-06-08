@@ -148,9 +148,14 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+# 用于开发环境静态文件处理
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
     )
+
+# DEBUG = False时, 设置STATIC_ROOT
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 
 # 邮箱
 EMAIL_HOST = 'smtp.sina.com'

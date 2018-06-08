@@ -31,6 +31,7 @@ class CourseOrg(models.Model):
     category = models.CharField('机构类别', max_length=10, choices=category_choices, default='pxjg')
     students = models.IntegerField('学生数', default=0)
     courses = models.IntegerField('课程数', default=0)
+    tag = models.CharField('机构标签', max_length=10, default='全国知名')
 
     class Meta:
         verbose_name = '课程机构'

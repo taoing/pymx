@@ -20,7 +20,7 @@ class User(AbstractUser):
     address  = models.CharField(verbose_name = '地址', max_length = 100, null = True, blank = True)
     email = models.EmailField('邮箱', max_length = 50)
     # upload_to选项来指定MEDIA_ROOT的一个子目录用于存放上传的文件, 数据库中存放的仅是这个文件的路径（相对于MEDIA_ROOT）
-    image = models.ImageField(verbose_name='用户头像', upload_to = 'image/%Y/%m', default = 'image/default.png', max_length = 100)
+    image = models.ImageField(verbose_name='用户头像', upload_to = 'image/%Y/%m', default = 'image/default.png', max_length = 100, null=True, blank=True)
 
     class Meta:
         verbose_name = '用户信息'

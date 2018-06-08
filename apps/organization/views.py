@@ -12,6 +12,7 @@ from pure_pagination import Paginator, PageNotAnInteger, EmptyPage
 
 from .forms import UserAskForm
 from operation.models import UserFavorite
+from courses.models import Course
 
 '''
 class OrgView(View):
@@ -110,6 +111,11 @@ class OrgHomeView(View):
     def get(self, request, org_id):
         current_page = 'home'
         course_org = get_object_or_404(CourseOrg, id=org_id)
+
+        # get请求一次, click_nums +1
+        course_org.click_nums += 1
+        course_org.save()
+
         # 判断用户是否收藏机构
         has_fav = False
         if request.user.is_authenticated:
@@ -190,9 +196,28 @@ class AddFavoriteView(View):
             return HttpResponse('{"status":"fail", "msg":"用户未登录"}', content_type='appliction/json')
 
         exist_records = UserFavorite.objects.filter(user=request.user, fav_id=int(fav_id), fav_type=int(fav_type))
-        # 如果记录已存在, 表示操作要取消收藏
+        # 如果记录已存在, 表示操作要取消收藏, 取消收藏, 收藏数减1
         if exist_records:
             exist_records.delete()
+            if fav_type == 1:
+                course = Course.objects.get(id=int(fav_id))
+                course.fav_nums -= 1
+                if course.fav_nums < 0:
+                   course.fav_nums = 0
+                course.save()
+            elif fav_type == 2:
+                course_org = Course_org.objects.get(id=int(fav_id))
+                course_org.fav_nums -= 1
+                if course_org.fav_nums < 0:
+                    course_org.fav_nums = 0
+                course_org.save()
+            elif fav_type == 3:
+                teacher = Teacher.objects.get(id=int(fav_id))
+                teacher.fav_nums -= 1
+                if teacher.fav_nums < 0:
+                    teacher.fav_nums = 0
+                teacher.save()
+
             return HttpResponse('{"status":"success", "msg":"收藏"}', content_type='appliction/json')
         else:
             user_fav = UserFavorite()
@@ -201,6 +226,21 @@ class AddFavoriteView(View):
                 user_fav.fav_id = fav_id
                 user_fav.fav_type = fav_type
                 user_fav.save()
+
+                # 收藏, 收藏数加1
+                if fav_type == 1:
+                    course = Course.objects.get(id=int(fav_id))
+                    course.fav_nums += 1
+                    course.save()
+                elif fav_type == 2:
+                    course_org = Course_org.objects.get(id=int(fav_id))
+                    course_org.fav_nums += 1
+                    course_org.save()
+                elif fav_type == 3:
+                    teacher = Teacher.objects.get(id=int(fav_id))
+                    teacher.fav_nums += 1
+                    teacher.save()
+
                 return HttpResponse('{"status":"success", "msg":"已收藏"}', content_type='appliction/json')
             else:
                 return HttpResponse('{"status":"fail", "msg":"收藏出错"}', content_type='appliction/json')
@@ -254,6 +294,11 @@ class TeacherDetailView(View):
     '''
     def get(self, request, teacher_id):
         teacher = get_object_or_404(Teacher, id=teacher_id)
+
+        # 点击数加1
+        teacher.click_nums += 1
+        teacher.save()
+
         teacher_courses = teacher.course_set.all()
 
         sorted_teachers = Teacher.objects.all().order_by('-click_nums')[:3]

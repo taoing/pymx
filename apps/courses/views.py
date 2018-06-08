@@ -27,7 +27,7 @@ class CourseListView(View):
             if sort == 'hot':
                 all_courses = all_courses.order_by('-click_nums')
             elif sort == 'students':
-                all_courses = all_courses.order_by('students')
+                all_courses = all_courses.order_by('-students')
 
         # 分页
         paginator = Paginator(all_courses, 3, request=request)
@@ -96,6 +96,9 @@ class CourseInfoView(LoginRequiredMixin, View):
             # 如果用户没有学习这门课程就将用户与课程关联起来, 创建usercourse记录
             user_course = UserCourse(user=request.user, course=course)
             user_course.save()
+            # 课程学习人数加1
+            course.students += 1
+            course.save()
 
         all_resources = CourseResource.objects.filter(course=course)
 

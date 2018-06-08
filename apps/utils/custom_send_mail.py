@@ -52,7 +52,7 @@ def send_code_email(email_to):
     email_code.save()
 
     subject = '邮箱修改验证码'
-    message = '您的邮箱验证码为: {0}'.format(code)
+    message = '您的邮箱验证码为: {0}, 验证码在20分钟内有效'.format(code)
     send_status = send_mail(subject, message, EMAIL_FROM, [email_to])
     if send_status:
         print('验证码邮件已发送')

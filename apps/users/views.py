@@ -5,7 +5,8 @@ from django.shortcuts import render
 import json
 from datetime import datetime, timedelta
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.backends import ModelBackend #默认用户认证后端
 from django.db.models import Q
@@ -16,7 +17,7 @@ from pure_pagination import Paginator, PageNotAnInteger, EmptyPage
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 from pymx.settings import SECRET_KEY
-from .models import User, EmailVerifyCode
+from .models import User, EmailVerifyCode, Banner
 from .forms import LoginForm, RegisterForm, ForgetPwdForm, ResetPwdForm, UploadImageForm, UserInfoForm
 from operation.models import UserCourse, UserFavorite, UserMessage
 from organization.models import CourseOrg, Teacher
@@ -37,6 +38,26 @@ class CustomBackend(ModelBackend):
         except Exception as e:
             return None
 
+
+class IndexView(View):
+    '''网站首页'''
+    def get(self, request):
+        banners = Banner.objects.all().order_by('index')[:3]
+
+        courses = Course.objects.filter(is_banner=False)[:6]
+
+        banner_courses = Course.objects.filter(is_banner=True)[:2]
+
+        course_orgs = CourseOrg.objects.all()[:15]
+
+        return render(request, 'index.html', {
+            'banners':banners,
+            'courses':courses,
+            'banner_courses':banner_courses,
+            'course_orgs':course_orgs,
+        })
+
+'''
 def user_login(request):
     if request.method == 'POST':
         username = request.POST.get('username', None)
@@ -51,6 +72,7 @@ def user_login(request):
             return render(request, 'login.html', {'msg':'用户名或密码错误'})
     elif request.method == 'GET':
         return render(request, 'login.html')
+'''
 
 class LoginView(View):
     def get(self, request):
@@ -68,7 +90,7 @@ class LoginView(View):
                 if user.is_active:
                     # login登录用户,将用户ID存入session中
                     login(request, user)
-                    return render(request, 'index.html')
+                    return HttpResponseRedirect(reverse('index'))
                 else:
                     return render(request, 'login.html', {'msg':'请先去邮箱激活账户', 'login_form':login_form})
             else:
@@ -90,7 +112,7 @@ class RegisterView(View):
                 return render(request, 'register.html', {'register_form':register_form, 'msg':'用户已存在'})
             user = User()
             user.email = email
-            user.username = email.split('@',1)[0]
+            user.username = email
             user.password = make_password(password)
             user.is_active = False
             user.save()
@@ -104,7 +126,7 @@ class RegisterView(View):
             token = user.generate_activate_token()
             # 发送邮件耗时操作
             send_register_email(user.email, token)
-            return render(request, 'login.html')
+            return HttpResponseRedirect(reverse('login'))
         else:
             return render(request, 'register.html', {'register_form':register_form})
 
@@ -128,7 +150,7 @@ class ActivateView(View):
             message.save()
         else:
             return render(request, 'activate_fail.html')
-        return render(request, 'login.html')
+        return HttpResponseRedirect(reverse('login'))
 
 # 忘记密码,申请重置密码
 class ForgetPwdView(View):
@@ -181,14 +203,22 @@ class ResetPwdView(View):
             message.message = '密码已重置'
             message.save()
 
-            return render(request, 'login.html')
+            return HttpResponseRedirect(reverse('login'))
         else:
             return render(request, 'password_reset.html', {'emial':email, 'resetpwd_form':resetpwd_form})
 
 
+'''
 def user_logout(request):
     logout(request)
     return render(request, 'index.html')
+'''
+
+class LogoutView(View):
+    '''退出登录'''
+    def get(self, request):
+        logout(request)
+        return HttpResponseRedirect(reverse('index'))
 
 
 class UserInfoView(LoginRequiredMixin, View):
@@ -323,7 +353,13 @@ class MyFavCourseView(LoginRequiredMixin, View):
 class MyMessageView(LoginRequiredMixin, View):
     '''用户消息'''
     def get(self, request):
-        all_messages = UserMessage.objects.filter(user=request.user.id)
+        all_messages = UserMessage.objects.filter(user=request.user.id).order_by('-add_time')
+
+        # 所有未读消息变为已读
+        all_unread_messages = UserMessage.objects.filter(user=request.user.id, has_read=False)
+        for unread_message in all_unread_messages:
+            unread_message.has_read = True
+            unread_message.save()
 
         # 分页
         paginator = Paginator(all_messages, 2, request=request)
@@ -338,3 +374,14 @@ class MyMessageView(LoginRequiredMixin, View):
         return render(request, 'usercenter-message.html', {
             'all_messages':page,
             })
+
+
+def custom_page_not_found(request, exception):
+    '''404错误页面, 自写404处理视图, 需调用默认的404的page_not_found视图函数'''
+    from django.views.defaults import page_not_found
+    res = page_not_found(request, exception, template_name='404.html')
+    return res
+
+def server_error(request):
+    '''500错误页面, 505处理视图直接写'''
+    return render(request, '500.html', status=500)
