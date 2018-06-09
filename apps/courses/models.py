@@ -4,12 +4,17 @@ from django.db import models
 
 from datetime import datetime
 
+# from ckeditor.fields import RichTextField
+from ckeditor_uploader.fields import RichTextUploadingField
+
 from organization.models import CourseOrg, Teacher
 
 class Course(models.Model):
     name = models.CharField(max_length = 50, verbose_name = '课程名称')
     desc = models.CharField(max_length = 300, verbose_name = '课程描述')
-    detail = models.TextField(verbose_name = '课程详情')
+    # detail = models.TextField(verbose_name = '课程详情')
+    # detail = RichTextField(verbose_name = '课程详情')
+    detail = RichTextUploadingField(verbose_name = '课程详情')
     degree = models.CharField(choices = (('cj', '初级'), ('zj', '中级'),('gj', '高级')), max_length = 2, verbose_name = '课程难度')
     learn_time = models.IntegerField(default = 0, verbose_name = '课程时长(分钟数)')
     students = models.IntegerField(default = 0, verbose_name = '学习人数')
@@ -34,6 +39,7 @@ class Course(models.Model):
 
     def get_lesson_nums(self):
         return self.lesson_set.all().count()
+    get_lesson_nums.short_description = '章节数'
 
     def get_course_lesson(self):
         # 获取课程章节
@@ -41,6 +47,21 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
+    def go_to(self):
+        '''跳转到课程的详情页, 可以使用reverse解析url'''
+        from django.utils.safestring import mark_safe
+        # mark_safe标记字符串为安全字符串, 不需要html转义
+        return mark_safe('<a href="/course/detail/%s/">跳转</a>' % self.id)
+    go_to.short_description = '跳转'
+
+class BannerCourse(Course):
+    '''轮播课程'''
+    class Meta:
+        verbose_name = '轮播课程'
+        verbose_name_plural = verbose_name
+        # 设置为代理模型, 共用同一张表, 可以在代理模型中有不同的展示逻辑
+        proxy = True
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete = models.CASCADE, null = True, blank = True, verbose_name = '课程')

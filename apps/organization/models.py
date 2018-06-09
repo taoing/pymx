@@ -4,6 +4,9 @@ from django.db import models
 
 from datetime import datetime
 
+# from ckeditor.fields import RichTextField
+from ckeditor_uploader.fields import RichTextUploadingField
+
 class City(models.Model):
     name = models.CharField('城市', max_length = 20)
     add_time = models.DateTimeField('添加时间', default = datetime.now)
@@ -21,8 +24,10 @@ class CourseOrg(models.Model):
     name = models.CharField('机构名称', max_length = 40)
     city = models.ForeignKey(City, on_delete = models.CASCADE, null = True, blank = True, verbose_name = '所在城市')
     location = models.CharField('地址', max_length = 50)
-    image = models.ImageField('logo', upload_to = 'org/%Y/%m', max_length = 100)
-    desc = models.TextField('描述')
+    image = models.ImageField('logo', upload_to = 'org/%Y/%m', max_length = 100, null=True, blank=True)
+    # desc = models.TextField('描述')
+    # desc = RichTextField('描述')
+    desc = RichTextUploadingField('描述')
     add_time = models.DateTimeField('添加时间', default = datetime.now)
     index = models.IntegerField('排序', default = 999)
     click_nums = models.IntegerField('点击数', default = 0)
@@ -53,7 +58,7 @@ class Teacher(models.Model):
     click_nums = models.IntegerField('点击数', default = 0)
     fav_nums = models.IntegerField('收藏数', default = 0)
     add_time = models.DateTimeField('添加时间', default = datetime.now)
-    image = models.ImageField('头像', upload_to = 'teacher/%Y/%m', max_length = 100, default='')
+    image = models.ImageField('头像', upload_to = 'teacher/%Y/%m', max_length = 100, null=True, blank=True)
     age = models.IntegerField('年龄', default = 24)
 
     class Meta:

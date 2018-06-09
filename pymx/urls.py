@@ -48,6 +48,9 @@ urlpatterns = [
     # 用户个人中心相关
     path('users/', include('users.urls', namespace='users')),
 
+    # 富文本编辑器, 启用ckeditor_uploader时配置
+    path('ckeditor/', include('ckeditor_uploader.urls')),
+
     # DEBUG = False时, 静态文件访问处理
     # re_path(r'^static/(?P<path>.*)$', serve, {'document_root':STATIC_ROOT}),
 ]

@@ -52,6 +52,10 @@ INSTALLED_APPS = [
     'captcha',
     #分页
     'pure_pagination',
+    # 富文本编辑器
+    'ckeditor',
+    # 文件上传功能在ckeditor_uploaderzhong
+    'ckeditor_uploader',
 ]
 
 # 自定用户模型
@@ -169,6 +173,10 @@ EMAIL_FROM = 'taomiantm@sina.com'
 # 简单理解:MEDIA_URL是浏览器通过url访问的url, MEDIA_ROOT是文件在服务器上的存放位置
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# ckeditor_uploader文件上传保存位置, 在media目录下
+CKEDITOR_UPLOAD_PATH = 'upload/'
+
 
 # 分页设置
 PAGINATION_SETTINGS = {
